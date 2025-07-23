@@ -1,14 +1,12 @@
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
+pub mod auth;
+pub mod errors;
+pub mod glider;
+pub use serde;
+pub mod prelude {
+    pub use crate::{
+        auth::{CredentialType, GlideRecordConfig},
+        errors::GlideError,
+        glider::{GlideRecord, GlideReference, Glideable},
+    };
+    pub use glide_record_proc_macro::glideable;
 }
