@@ -63,7 +63,7 @@ pub fn glideable(_attr: TokenStream, item: TokenStream) -> TokenStream {
             }
         }
     };
-    eprintln!("{}", expanded);
+    //eprintln!("{}", expanded);
 
     TokenStream::from(expanded)
 }
