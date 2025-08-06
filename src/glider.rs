@@ -116,6 +116,26 @@ impl GlideReference {
     }
 }
 
+enum QueryOrd {
+    None,
+    Ascending(String),
+    Decending(String),
+}
+
+impl QueryOrd {
+    pub fn encode(&self, encoded_query: &String) -> String {
+        match self {
+            Self::None => encoded_query.to_owned(),
+            Self::Ascending(field_name) => {
+                format!("{}^ORDERBY{}", encoded_query, field_name)
+            }
+            Self::Decending(field_name) => {
+                format!("{}^ORDERBYDESC{}", encoded_query, field_name)
+            }
+        }
+    }
+}
+
 pub struct GlideRecord<T: Serialize + DeserializeOwned> {
     table_name: String,
     encoded_query: String,
@@ -127,6 +147,7 @@ pub struct GlideRecord<T: Serialize + DeserializeOwned> {
     batch_size: u32,
     current_batch: GlideResponseBatch<T>,
     client: Client,
+    order_by: QueryOrd,
 }
 
 impl<T: Serialize + DeserializeOwned> GlideRecord<T> {
@@ -144,6 +165,7 @@ impl<T: Serialize + DeserializeOwned> GlideRecord<T> {
             batch_size: 10000,
             current_batch: GlideResponseBatch::new(),
             client: reqwest::blocking::Client::new(),
+            order_by: QueryOrd::None,
         })
     }
 
@@ -159,7 +181,16 @@ impl<T: Serialize + DeserializeOwned> GlideRecord<T> {
             batch_size: 10000,
             current_batch: GlideResponseBatch::new(),
             client: reqwest::blocking::Client::new(),
+            order_by: QueryOrd::None,
         }
+    }
+
+    pub fn order_by(&mut self, field_name: &str) {
+        self.order_by = QueryOrd::Ascending(field_name.to_string());
+    }
+
+    pub fn order_by_desc(&mut self, field_name: &str) {
+        self.order_by = QueryOrd::Decending(field_name.to_string());
     }
 
     pub fn add_encoded_query(&mut self, query: &str) {
@@ -191,11 +222,12 @@ impl<T: Serialize + DeserializeOwned> GlideRecord<T> {
     }
 
     fn table_api_link(&self) -> String {
+        let query = self.order_by.encode(&self.encoded_query);
         format!(
             "https://{}/api/now/table/{}?sysparm_query={}&sysparm_limit={}&sysparm_offset={}",
             self.config.snow_instance(),
             self.table_name,
-            self.encoded_query,
+            query,
             self.batch_size,
             self.offset
         )
